@@ -21,6 +21,7 @@ from utils import *
 
 import math
 import matplotlib.pyplot as plt
+import pdb
 
 
 parser = argparse.ArgumentParser()
@@ -36,7 +37,7 @@ args = parser.parse_args()
 
 class_num = 4  # cat dog person background
 
-num_epochs = 30  # 30  # 100
+num_epochs = 100  # 30  # 100
 batch_size = 32  # 32
 # loss sum weight
 alpha = 1
@@ -97,7 +98,10 @@ if not args.test:
             # pred_confidence = F.softmax(pred_confidence, dim=2)
 
         print('[%d] time: %f train loss: %f' % (epoch, time.time()-start_time, avg_loss/avg_count))
-        train_loss.append(avg_loss/avg_count)
+        train_loss_eps = avg_loss.detach().cpu().numpy()/avg_count
+        # print(type(train_loss_eps), train_loss_eps)
+        # pdb.set_trace()
+        train_loss.append(train_loss_eps)
         
         #visualize
         pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
@@ -147,7 +151,10 @@ if not args.test:
             # update_precision_recall(pred_confidence_, pred_box_, ann_confidence_.numpy(), ann_box_.numpy(), boxs_default,precision_,recall_,thres)
 
         print('[%d] time: %f val loss: %f' % (epoch, time.time()-start_time, avg_loss/avg_count))
-        val_loss.append(avg_loss/avg_count)
+        val_loss_eps = avg_loss.detach().cpu().numpy()/avg_count
+        # print(type(val_loss_eps), val_loss_eps)
+        # pdb.set_trace()
+        val_loss.append(val_loss_eps)
 
         #visualize
         pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
@@ -172,6 +179,9 @@ if not args.test:
 
     lossfig, lossaxes = plt.subplots()
     epoch_list = list(range(num_epochs))
+    # print(len(train_loss), train_loss)
+    # print(len(val_loss), val_loss)
+    # pdb.set_trace()
     lossaxes.plot(epoch_list, train_loss, label='train_loss', color='b')
     lossaxes.plot(epoch_list, val_loss, label='val_loss', color='r')
     lossaxes.set_xlabel('epoch')
@@ -247,5 +257,31 @@ if args.test and args.mode == 'Eval':
         # cv2.waitKey(1000)
         # visualize_pred_only('Visual', pred_confidence_, pred_box_, images_[0].numpy(), boxs_default, image_names_[0])
         visualize_pred('Visual', pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(),
-                       images_[0].numpy(), boxs_default, image_names_[0], do_nms=True, nms_threshold=0.6,
-                       nms_overlap=0.3)
+                       images_[0].numpy(), boxs_default, image_names_[0], do_nms=True, nms_threshold=0.4,
+                       nms_overlap=0.5)
+
+if args.test and args.mode == 'Print':
+    # Print annotation files
+    dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train=False,
+                        image_size=320, mode='Eval')
+    dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=0)
+    network.load_state_dict(torch.load('network.pth'))
+    network.eval()
+
+    for i, data in enumerate(dataloader_test, 0):
+        images_, ann_box_, ann_confidence_, image_names_ = data
+        images = images_.cuda()
+        ann_box = ann_box_.cuda()
+        ann_confidence = ann_confidence_.cuda()
+
+        pred_confidence, pred_box = network(images)
+
+        # pred_confidence = F.softmax(pred_confidence, dim=2)
+
+        pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
+        pred_box_ = pred_box[0].detach().cpu().numpy()
+
+        pred_confidence, pred_box, default_box_used = non_maximum_suppression(pred_confidence_, pred_box_, boxs_default,
+                                                                              overlap=0.3, threshold=0.6)
+
+        output_annotations(pred_confidence, pred_box, images_[0].numpy(), image_names_[0], out_mode='Eval/')

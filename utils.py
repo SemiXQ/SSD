@@ -7,90 +7,90 @@ import math
 colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
 #use [blue green red] to represent different classes
 
-def visualize_pred_only(windowname, pred_confidence, pred_box, image_, boxs_default, image_names_):
-    _, class_num = pred_confidence.shape
-    # class_num = 4
-    class_num = class_num - 1
-    # class_num = 3 now, because we do not need the last class (background)
-
-    image = image_ * 255
-    image = np.transpose(image, (1, 2, 0)).astype(np.uint8)
-
-    # image3 = np.zeros(image.shape, np.uint8)
-    # image4 = np.zeros(image.shape, np.uint8)
-    # image3[:] = image[:]
-    # image4[:] = image[:]
-
-    image1 = np.zeros(image.shape, np.uint8)
-    image2 = np.zeros(image.shape, np.uint8)
-    image3 = np.zeros(image.shape, np.uint8)
-    image4 = np.zeros(image.shape, np.uint8)
-    image1[:] = image[:]
-    image2[:] = image[:]
-    image3[:] = image[:]
-    image4[:] = image[:]
-    # image1: draw ground truth bounding boxes on image1
-    # image2: draw ground truth "default" boxes on image2 (to show that you have assigned the object to the correct cell/cells)
-    # image3: draw network-predicted bounding boxes on image3
-    # image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
-
-    width, height, _ = image.shape
-
-    # draw pred
-    ''''''
-    pred_confidence_, pred_box_, default_box_used = non_maximum_suppression(pred_confidence, pred_box, boxs_default,
-                                                                            overlap=0.3, threshold=0.6)
-
-    for i in range(len(pred_confidence_)):
-        for j in range(class_num):
-            if pred_confidence_[i, j] > 0.7:
-                # TODO:
-                # image3: draw network-predicted bounding boxes on image3
-                # image4: draw network-predicted "default" boxes on image4
-                # (to show which cell does your network think that contains an object)
-
-                # predicted bounding box
-                xmin = int(max(round(pred_box_[i, 4] * width), 0))
-                ymin = int(max(round(pred_box_[i, 5] * height), 0))
-                xmax = int(min(round(pred_box_[i, 6] * width), width))
-                ymax = int(min(round(pred_box_[i, 7] * height), height))
-
-                start_point = (xmin, ymin)  # top left corner, x1<x2, y1<y2
-                end_point = (xmax, ymax)
-                color = colors[j]
-                thickness = 2
-                cv2.rectangle(image3, start_point, end_point, color, thickness)
-
-                # default box used
-                xmin = int(max(round(default_box_used[i, 4] * width), 0))
-                ymin = int(max(round(default_box_used[i, 5] * height), 0))
-                xmax = int(min(round(default_box_used[i, 6] * width), width))
-                ymax = int(min(round(default_box_used[i, 7] * height), height))
-
-                start_point = (xmin, ymin)  # top left corner, x1<x2, y1<y2
-                end_point = (xmax, ymax)
-                color = colors[j]
-                thickness = 2
-                cv2.rectangle(image4, start_point, end_point, color, thickness)
-
-    # combine four images into one
-    # image = np.zeros([height, width * 2, 3], np.uint8)
-    # image[:, :width] = image3
-    # image[:, width:] = image4
-
-    image = np.zeros([height * 2, width * 2, 3], np.uint8)
-    image[:height, :width] = image1
-    image[:height, width:] = image2
-    image[height:, :width] = image3
-    image[height:, width:] = image4
-
-    # output_dir = 'visual_output/' + image_names_
-    output_dir = 'output/' + windowname + '/' + image_names_
-    # cv2.imshow(windowname+" [[gt_box,gt_dft],[pd_box,pd_dft]]", image)
-    cv2.imwrite(output_dir, image)
-    # cv2.waitKey(1)
-    # if you are using a server, you may not be able to display the image.
-    # in that case, please save the image using cv2.imwrite and check the saved image for visualization
+# def visualize_pred_only(windowname, pred_confidence, pred_box, image_, boxs_default, image_names_):
+#     _, class_num = pred_confidence.shape
+#     # class_num = 4
+#     class_num = class_num - 1
+#     # class_num = 3 now, because we do not need the last class (background)
+#
+#     image = image_ * 255
+#     image = np.transpose(image, (1, 2, 0)).astype(np.uint8)
+#
+#     # image3 = np.zeros(image.shape, np.uint8)
+#     # image4 = np.zeros(image.shape, np.uint8)
+#     # image3[:] = image[:]
+#     # image4[:] = image[:]
+#
+#     image1 = np.zeros(image.shape, np.uint8)
+#     image2 = np.zeros(image.shape, np.uint8)
+#     image3 = np.zeros(image.shape, np.uint8)
+#     image4 = np.zeros(image.shape, np.uint8)
+#     image1[:] = image[:]
+#     image2[:] = image[:]
+#     image3[:] = image[:]
+#     image4[:] = image[:]
+#     # image1: draw ground truth bounding boxes on image1
+#     # image2: draw ground truth "default" boxes on image2 (to show that you have assigned the object to the correct cell/cells)
+#     # image3: draw network-predicted bounding boxes on image3
+#     # image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
+#
+#     width, height, _ = image.shape
+#
+#     # draw pred
+#     ''''''
+#     pred_confidence_, pred_box_, default_box_used = non_maximum_suppression(pred_confidence, pred_box, boxs_default,
+#                                                                             overlap=0.3, threshold=0.6)
+#
+#     for i in range(len(pred_confidence_)):
+#         for j in range(class_num):
+#             if pred_confidence_[i, j] > 0.7:
+#                 # TODO:
+#                 # image3: draw network-predicted bounding boxes on image3
+#                 # image4: draw network-predicted "default" boxes on image4
+#                 # (to show which cell does your network think that contains an object)
+#
+#                 # predicted bounding box
+#                 xmin = int(max(round(pred_box_[i, 4] * width), 0))
+#                 ymin = int(max(round(pred_box_[i, 5] * height), 0))
+#                 xmax = int(min(round(pred_box_[i, 6] * width), width))
+#                 ymax = int(min(round(pred_box_[i, 7] * height), height))
+#
+#                 start_point = (xmin, ymin)  # top left corner, x1<x2, y1<y2
+#                 end_point = (xmax, ymax)
+#                 color = colors[j]
+#                 thickness = 2
+#                 cv2.rectangle(image3, start_point, end_point, color, thickness)
+#
+#                 # default box used
+#                 xmin = int(max(round(default_box_used[i, 4] * width), 0))
+#                 ymin = int(max(round(default_box_used[i, 5] * height), 0))
+#                 xmax = int(min(round(default_box_used[i, 6] * width), width))
+#                 ymax = int(min(round(default_box_used[i, 7] * height), height))
+#
+#                 start_point = (xmin, ymin)  # top left corner, x1<x2, y1<y2
+#                 end_point = (xmax, ymax)
+#                 color = colors[j]
+#                 thickness = 2
+#                 cv2.rectangle(image4, start_point, end_point, color, thickness)
+#
+#     # combine four images into one
+#     # image = np.zeros([height, width * 2, 3], np.uint8)
+#     # image[:, :width] = image3
+#     # image[:, width:] = image4
+#
+#     image = np.zeros([height * 2, width * 2, 3], np.uint8)
+#     image[:height, :width] = image1
+#     image[:height, width:] = image2
+#     image[height:, :width] = image3
+#     image[height:, width:] = image4
+#
+#     # output_dir = 'visual_output/' + image_names_
+#     output_dir = 'output/' + windowname + '/' + image_names_
+#     # cv2.imshow(windowname+" [[gt_box,gt_dft],[pd_box,pd_dft]]", image)
+#     cv2.imwrite(output_dir, image)
+#     # cv2.waitKey(1)
+#     # if you are using a server, you may not be able to display the image.
+#     # in that case, please save the image using cv2.imwrite and check the saved image for visualization
 
 
 def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_box, image_, boxs_default, image_names_,
@@ -237,7 +237,6 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     # in that case, please save the image using cv2.imwrite and check the saved image for visualization.
 
 
-
 def transform_to_truth_location(box_, boxs_default):
     # box_: x_center, y_center, width, height
     # boxs_default: x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max
@@ -328,3 +327,43 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, thresh
     default_box_used = np.array(default_box_used)
 
     return pred_confidence, pred_box, default_box_used
+
+
+def output_annotations(pred_confidences, pred_boxs, image_, image_names, out_mode='Eval/'):
+    image = image_ * 255
+    image = np.transpose(image, (1, 2, 0)).astype(np.uint8)
+    im_width, im_height, _ = image.shape
+
+    class_num = 0
+    if len(pred_confidences) != 0:
+        _, class_num = pred_confidences.shape
+        # class_num = 4
+        class_num = class_num - 1
+        # class_num = 3 now, because we do not need the last class (background)
+
+    img_name = image_names.split('.')[0]
+    img_name = 'output_anno/' + out_mode + img_name + '.txt'
+    print(img_name)
+
+    lines = []
+    for i in range(len(pred_confidences)):
+        if len(pred_confidences) == 0:
+            break
+        for j in range(class_num):
+            if pred_confidences[i, j] > 0.5:
+                class_id = j
+                x_min = pred_boxs[i, 4] * im_width
+                y_min = pred_boxs[i, 5] * im_height
+                box_width = pred_boxs[i, 2] * im_width
+                box_height = pred_boxs[i, 3] * im_height
+
+                lines.append([class_id, x_min, y_min, box_width, box_height])
+
+    # with open(img_name, 'w') as f:
+    #     f.write()
+    lines = np.asarray(lines)
+    if len(lines):
+        fmt = '%d', '%1.2f', '%1.2f', '%1.2f', '%1.2f'
+        np.savetxt(img_name, lines, fmt)
+    else:
+        np.savetxt(img_name, lines)
